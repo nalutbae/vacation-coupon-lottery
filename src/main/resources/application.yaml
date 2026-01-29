@@ -1,0 +1,91 @@
+# 공통 설정
+spring:
+  application:
+    name: vacation-coupon-lottery
+  
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+  
+  # Liquibase 설정
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
+  
+  # 메시지 설정 (한글 오류 메시지)
+  messages:
+    basename: messages
+    encoding: UTF-8
+
+# 로깅 설정
+logging:
+  level:
+    com.kidaristudio.vacationcouponlottery: INFO
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+---
+# 개발 환경 설정
+spring:
+  config:
+    activate:
+      on-profile: dev
+  
+  # H2 인메모리 데이터베이스 (개발용)
+  datasource:
+    url: jdbc:h2:mem:vacation_lottery_dev;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  # H2 콘솔 활성화
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
+  jpa:
+    show-sql: true
+
+# 로깅 레벨 (개발용)
+logging:
+  level:
+    root: INFO
+    com.kidaristudio.vacationcouponlottery: DEBUG
+
+---
+# 운영 환경 설정
+spring:
+  config:
+    activate:
+      on-profile: prod
+  
+  # H2 파일 데이터베이스 (운영용)
+  datasource:
+    url: jdbc:h2:file:./data/vacation_lottery_prod;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: vacation_lottery_2026!
+  
+  # H2 콘솔 비활성화 (보안)
+  h2:
+    console:
+      enabled: false
+
+  jpa:
+    show-sql: false
+
+# 로깅 레벨 (운영용)
+logging:
+  level:
+    root: WARN
+    com.kidaristudio.vacationcouponlottery: INFO

@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/v1.0/01-create-users-table.sql
+  - include:
+      file: db/changelog/v1.0/02-create-vacation-coupon-entries-table.sql
+  - include:
+      file: db/changelog/v1.0/03-create-system-config-table.sql
+  - include:
+      file: db/changelog/v1.0/04-create-lottery-results-table.sql
+  - include:
+      file: db/changelog/v1.0/05-insert-initial-system-config.sql
