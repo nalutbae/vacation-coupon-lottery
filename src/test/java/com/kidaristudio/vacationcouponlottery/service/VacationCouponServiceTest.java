@@ -52,6 +52,7 @@ class VacationCouponServiceTest {
         testUser = User.builder()
                 .phoneNumber(testPhoneNumber)
                 .coinCount(3) // 충분한 코인 제공
+                .totalAcquiredCoins(3) // 누적 획득 코인도 설정
                 .build();
         userRepository.save(testUser);
     }
@@ -100,6 +101,7 @@ class VacationCouponServiceTest {
                 .id(testUser.getId())
                 .phoneNumber(testPhoneNumber)
                 .coinCount(1) // 1개만 보유
+                .totalAcquiredCoins(testUser.getTotalAcquiredCoins()) // 누적은 유지
                 .createdAt(testUser.getCreatedAt())
                 .updatedAt(testUser.getUpdatedAt())
                 .build();

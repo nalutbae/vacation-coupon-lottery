@@ -62,11 +62,12 @@
                     </div>
                     <div class="card-body">
                         <div class="row align-items-center">
-                            <div class="col-md-6">
+                            <div class="col-md-8">
                                 <h6>보유 코인: <span id="coinCount" class="badge bg-primary">-</span>개</h6>
+                                <small class="text-muted">누적 획득: <span id="totalAcquiredCoins">-</span>/3개</small>
                             </div>
-                            <div class="col-md-6 text-end">
-                                <button type="button" class="btn btn-success" onclick="acquireCoin()">코인 획득</button>
+                            <div class="col-md-4 text-end">
+                                <button type="button" class="btn btn-success" id="acquireCoinBtn" onclick="acquireCoin()">코인 획득</button>
                             </div>
                         </div>
                     </div>
@@ -175,10 +176,14 @@
                 
                 if (data.code === 'SUCCESS') {
                     document.getElementById('coinCount').textContent = data.data;
+                    // 사용자 정보 조회 시에는 누적 획득 코인 정보가 없으므로 별도 API 호출 필요
+                    loadUserCumulativeInfo(phoneNumber);
                     showAlert('사용자 정보를 조회했습니다.', 'success');
                     loadMyEntries();
                 } else if (response.status === 404) {
                     document.getElementById('coinCount').textContent = '0';
+                    document.getElementById('totalAcquiredCoins').textContent = '0';
+                    updateAcquireButtonState(0);
                     showAlert('새로운 사용자입니다. 코인을 획득해주세요.', 'info');
                 } else {
                     showAlert(`오류: ${data.message}`, 'danger');
@@ -209,7 +214,12 @@
                 
                 if (data.code === 'SUCCESS') {
                     document.getElementById('coinCount').textContent = data.data.coinCount;
-                    showAlert(`코인을 획득했습니다! (보유: ${data.data.coinCount}개)`, 'success');
+                    document.getElementById('totalAcquiredCoins').textContent = data.data.totalAcquiredCoins;
+                    
+                    // 누적 획득 코인이 3개에 도달하면 버튼 비활성화
+                    updateAcquireButtonState(data.data.totalAcquiredCoins);
+                    
+                    showAlert(`코인을 획득했습니다! (보유: ${data.data.coinCount}개, 누적: ${data.data.totalAcquiredCoins}/3개)`, 'success');
                 } else {
                     showAlert(`오류: ${data.message}`, 'danger');
                 }
@@ -336,6 +346,45 @@
             } catch (error) {
                 showAlert('서버 연결에 실패했습니다.', 'danger');
                 console.error('Error:', error);
+            }
+        }
+
+        // 사용자 누적 코인 정보 조회 (새로운 API 사용)
+        async function loadUserCumulativeInfo(phoneNumber) {
+            try {
+                const response = await fetch(`/api/status/user/coin-info?phoneNumber=${encodeURIComponent(phoneNumber)}`);
+                const data = await response.json();
+                
+                if (data.code === 'SUCCESS') {
+                    document.getElementById('coinCount').textContent = data.data.coinCount;
+                    document.getElementById('totalAcquiredCoins').textContent = data.data.totalAcquiredCoins;
+                    updateAcquireButtonState(data.data.totalAcquiredCoins);
+                } else {
+                    // 기본값으로 설정
+                    document.getElementById('totalAcquiredCoins').textContent = '0';
+                    updateAcquireButtonState(0);
+                }
+            } catch (error) {
+                console.error('Error loading cumulative info:', error);
+                // 기본값으로 설정
+                document.getElementById('totalAcquiredCoins').textContent = '0';
+                updateAcquireButtonState(0);
+            }
+        }
+
+        // 코인 획득 버튼 상태 업데이트
+        function updateAcquireButtonState(totalAcquiredCoins) {
+            const acquireBtn = document.getElementById('acquireCoinBtn');
+            if (totalAcquiredCoins >= 3) {
+                acquireBtn.disabled = true;
+                acquireBtn.textContent = '획득 완료';
+                acquireBtn.classList.remove('btn-success');
+                acquireBtn.classList.add('btn-secondary');
+            } else {
+                acquireBtn.disabled = false;
+                acquireBtn.textContent = '코인 획득';
+                acquireBtn.classList.remove('btn-secondary');
+                acquireBtn.classList.add('btn-success');
             }
         }
 
