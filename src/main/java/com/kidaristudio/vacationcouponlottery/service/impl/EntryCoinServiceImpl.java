@@ -1,6 +1,5 @@
 package com.kidaristudio.vacationcouponlottery.service.impl;
 
-import com.kidaristudio.vacationcouponlottery.domain.SystemConfig;
 import com.kidaristudio.vacationcouponlottery.domain.User;
 import com.kidaristudio.vacationcouponlottery.dto.ApiResponse;
 import com.kidaristudio.vacationcouponlottery.dto.CoinAcquisitionResult;
@@ -48,9 +47,9 @@ public class EntryCoinServiceImpl implements EntryCoinService {
             User user = userRepository.findByPhoneNumberWithLock(phoneNumber)
                     .orElseGet(() -> createNewUser(phoneNumber));
 
-            // 3. 사용자별 코인 한도 확인
-            if (user.getCoinCount() >= 3) {
-                throw new CoinException.CoinLimitExceededException();
+            // 3. 사용자별 누적 코인 획득 한도 확인
+            if (!user.canAcquireMoreCoins()) {
+                throw new CoinException.CoinLimitExceededException("누적 응모 코인 획득 한도(3개)에 도달했습니다.");
             }
 
             // 4. 원자적 코인 분배
@@ -59,8 +58,8 @@ public class EntryCoinServiceImpl implements EntryCoinService {
                 throw new CoinException.NoRemainingCoinsException("동시 요청으로 인해 코인이 소진되었습니다.");
             }
 
-            // 5. 사용자 코인 증가
-            user.increaseCoinCount();
+            // 5. 사용자 코인 획득 (누적 획득 수도 함께 증가)
+            user.acquireCoin();
             userRepository.save(user);
 
             // 6. 결과 생성
@@ -68,12 +67,13 @@ public class EntryCoinServiceImpl implements EntryCoinService {
             CoinAcquisitionResult result = CoinAcquisitionResult.builder()
                     .phoneNumber(phoneNumber)
                     .coinCount(user.getCoinCount())
+                    .totalAcquiredCoins(user.getTotalAcquiredCoins())
                     .acquiredCoins(1)
                     .remainingCoins(newRemainingCoins)
                     .build();
 
-            log.info("응모 코인 획득 성공: phoneNumber={}, coinCount={}, remainingCoins={}", 
-                    phoneNumber, user.getCoinCount(), newRemainingCoins);
+            log.info("응모 코인 획득 성공: phoneNumber={}, coinCount={}, totalAcquiredCoins={}, remainingCoins={}", 
+                    phoneNumber, user.getCoinCount(), user.getTotalAcquiredCoins(), newRemainingCoins);
 
             return ApiResponse.success("응모 코인을 성공적으로 획득했습니다.", result);
 

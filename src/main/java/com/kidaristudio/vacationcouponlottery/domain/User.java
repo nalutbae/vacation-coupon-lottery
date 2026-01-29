@@ -44,6 +44,14 @@ public class User {
     private Integer coinCount = 0;
 
     /**
+     * 누적 획득 코인 수
+     * 사용자가 지금까지 획득한 총 코인 수 (최대 3개)
+     */
+    @Column(name = "total_acquired_coins", nullable = false)
+    @Builder.Default
+    private Integer totalAcquiredCoins = 0;
+
+    /**
      * 생성 시간
      */
     @CreatedDate
@@ -73,6 +81,28 @@ public class User {
             throw new IllegalStateException("응모 코인은 최대 3개까지만 보유할 수 있습니다.");
         }
         this.coinCount++;
+    }
+
+    /**
+     * 응모 코인 획득 (누적 획득 수도 함께 증가)
+     * 누적 획득 코인이 3개에 도달하면 더 이상 획득 불가
+     */
+    public void acquireCoin() {
+        if (this.totalAcquiredCoins >= 3) {
+            throw new IllegalStateException("누적 응모 코인 획득 한도(3개)에 도달했습니다.");
+        }
+        if (this.coinCount >= 3) {
+            throw new IllegalStateException("응모 코인은 최대 3개까지만 보유할 수 있습니다.");
+        }
+        this.coinCount++;
+        this.totalAcquiredCoins++;
+    }
+
+    /**
+     * 누적 획득 코인 한도 확인
+     */
+    public boolean canAcquireMoreCoins() {
+        return this.totalAcquiredCoins < 3;
     }
 
     /**

@@ -3,6 +3,7 @@ package com.kidaristudio.vacationcouponlottery.service;
 import com.kidaristudio.vacationcouponlottery.dto.ApiResponse;
 import com.kidaristudio.vacationcouponlottery.dto.CoinStatusResponse;
 import com.kidaristudio.vacationcouponlottery.dto.CouponEntryStatus;
+import com.kidaristudio.vacationcouponlottery.dto.UserCoinInfo;
 import com.kidaristudio.vacationcouponlottery.dto.UserEntryStatus;
 
 import java.util.List;
@@ -28,6 +29,14 @@ public interface StatusService {
      * @return 보유 응모 코인 수
      */
     ApiResponse<Integer> getUserCoinCount(String phoneNumber);
+
+    /**
+     * 사용자의 코인 정보를 조회합니다 (보유 코인 + 누적 획득 코인).
+     * 
+     * @param phoneNumber 사용자 전화번호
+     * @return 사용자 코인 정보
+     */
+    ApiResponse<UserCoinInfo> getUserCoinInfo(String phoneNumber);
 
     /**
      * 전체 응모 현황을 조회합니다.

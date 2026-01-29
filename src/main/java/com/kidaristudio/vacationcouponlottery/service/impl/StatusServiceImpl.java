@@ -7,6 +7,7 @@ import com.kidaristudio.vacationcouponlottery.domain.VacationCouponEntry;
 import com.kidaristudio.vacationcouponlottery.dto.ApiResponse;
 import com.kidaristudio.vacationcouponlottery.dto.CoinStatusResponse;
 import com.kidaristudio.vacationcouponlottery.dto.CouponEntryStatus;
+import com.kidaristudio.vacationcouponlottery.dto.UserCoinInfo;
 import com.kidaristudio.vacationcouponlottery.dto.UserEntryStatus;
 import com.kidaristudio.vacationcouponlottery.repository.LotteryResultRepository;
 import com.kidaristudio.vacationcouponlottery.repository.SystemConfigRepository;
@@ -107,6 +108,41 @@ public class StatusServiceImpl implements StatusService {
         } catch (Exception e) {
             log.error("사용자 코인 수량 조회 중 오류 발생: phoneNumber={}", phoneNumber, e);
             return ApiResponse.error("QUERY_ERROR", "코인 수량 조회 중 오류가 발생했습니다.");
+        }
+    }
+
+    @Override
+    public ApiResponse<UserCoinInfo> getUserCoinInfo(String phoneNumber) {
+        log.debug("사용자 코인 정보 조회 시작: phoneNumber={}", phoneNumber);
+        
+        try {
+            Optional<User> userOpt = userRepository.findByPhoneNumber(phoneNumber);
+            if (userOpt.isEmpty()) {
+                log.debug("사용자를 찾을 수 없음: phoneNumber={}", phoneNumber);
+                UserCoinInfo defaultInfo = UserCoinInfo.builder()
+                        .phoneNumber(phoneNumber)
+                        .coinCount(0)
+                        .totalAcquiredCoins(0)
+                        .canAcquireMore(true)
+                        .build();
+                return ApiResponse.success(defaultInfo);
+            }
+            
+            User user = userOpt.get();
+            UserCoinInfo coinInfo = UserCoinInfo.builder()
+                    .phoneNumber(phoneNumber)
+                    .coinCount(user.getCoinCount())
+                    .totalAcquiredCoins(user.getTotalAcquiredCoins())
+                    .canAcquireMore(user.canAcquireMoreCoins())
+                    .build();
+            
+            log.debug("사용자 코인 정보 조회 완료: phoneNumber={}, coinCount={}, totalAcquiredCoins={}", 
+                    phoneNumber, user.getCoinCount(), user.getTotalAcquiredCoins());
+            return ApiResponse.success(coinInfo);
+            
+        } catch (Exception e) {
+            log.error("사용자 코인 정보 조회 중 오류 발생: phoneNumber={}", phoneNumber, e);
+            return ApiResponse.error("QUERY_ERROR", "코인 정보 조회 중 오류가 발생했습니다.");
         }
     }
 

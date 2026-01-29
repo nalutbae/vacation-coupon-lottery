@@ -6,14 +6,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 응모 코인 획득 결과 DTO
- * 코인 획득 후 사용자의 현재 상태를 반환합니다.
+ * 사용자 코인 정보 DTO
+ * 현재 보유 코인과 누적 획득 코인 정보를 포함합니다.
  */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CoinAcquisitionResult {
+public class UserCoinInfo {
     
     /**
      * 사용자 전화번호
@@ -31,12 +31,7 @@ public class CoinAcquisitionResult {
     private Integer totalAcquiredCoins;
     
     /**
-     * 획득한 코인 수 (일반적으로 1개)
+     * 추가 코인 획득 가능 여부
      */
-    private Integer acquiredCoins;
-    
-    /**
-     * 전체 남은 코인 수
-     */
-    private Integer remainingCoins;
+    private Boolean canAcquireMore;
 }

@@ -3,6 +3,7 @@ package com.kidaristudio.vacationcouponlottery.controller;
 import com.kidaristudio.vacationcouponlottery.dto.ApiResponse;
 import com.kidaristudio.vacationcouponlottery.dto.CoinStatusResponse;
 import com.kidaristudio.vacationcouponlottery.dto.CouponEntryStatus;
+import com.kidaristudio.vacationcouponlottery.dto.UserCoinInfo;
 import com.kidaristudio.vacationcouponlottery.dto.UserEntryStatus;
 import com.kidaristudio.vacationcouponlottery.service.StatusService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -144,6 +145,66 @@ public class StatusController {
         
         log.info("사용자 코인 수량 조회 완료 - 전화번호: {}, 코인 수: {}", 
                 phoneNumber, response.getData());
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 사용자 코인 정보 조회 API
+     * 특정 사용자의 코인 정보(보유 코인 + 누적 획득 코인)를 조회합니다.
+     * 
+     * @param phoneNumber 사용자 전화번호
+     * @return 사용자 코인 정보
+     */
+    @Operation(
+        summary = "사용자 코인 정보 조회",
+        description = "특정 사용자의 코인 정보를 조회합니다. 현재 보유 코인, 누적 획득 코인, 추가 획득 가능 여부를 포함합니다."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "조회 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponse.class),
+                examples = @ExampleObject(
+                    value = """
+                    {
+                        "code": "SUCCESS",
+                        "message": "코인 정보를 성공적으로 조회했습니다",
+                        "time": "2024-01-29T10:30:00",
+                        "data": {
+                            "phoneNumber": "010-1234-5678",
+                            "coinCount": 2,
+                            "totalAcquiredCoins": 3,
+                            "canAcquireMore": false
+                        }
+                    }
+                    """
+                )
+            )
+        )
+    })
+    @GetMapping("/user/coin-info")
+    public ResponseEntity<ApiResponse<UserCoinInfo>> getUserCoinInfo(
+            @Parameter(
+                description = "사용자 전화번호 (010-1234-5678 형식)", 
+                required = true,
+                example = "010-1234-5678"
+            )
+            @RequestParam 
+            @NotBlank(message = "전화번호는 필수입니다")
+            @Pattern(regexp = "^010-\\d{4}-\\d{4}$", message = "전화번호는 010-1234-5678 형식이어야 합니다")
+            String phoneNumber) {
+        
+        log.info("사용자 코인 정보 조회 요청 - 전화번호: {}", phoneNumber);
+        
+        ApiResponse<UserCoinInfo> response = statusService.getUserCoinInfo(phoneNumber);
+        
+        log.info("사용자 코인 정보 조회 완료 - 전화번호: {}, 보유 코인: {}, 누적 획득: {}", 
+                phoneNumber, 
+                response.getData() != null ? response.getData().getCoinCount() : "N/A",
+                response.getData() != null ? response.getData().getTotalAcquiredCoins() : "N/A");
         
         return ResponseEntity.ok(response);
     }

@@ -61,6 +61,7 @@ class EntryCoinServiceTest {
         CoinAcquisitionResult result = response.getData();
         assertThat(result.getPhoneNumber()).isEqualTo(phoneNumber);
         assertThat(result.getCoinCount()).isEqualTo(1);
+        assertThat(result.getTotalAcquiredCoins()).isEqualTo(1);
         assertThat(result.getAcquiredCoins()).isEqualTo(1);
         assertThat(result.getRemainingCoins()).isEqualTo(899);
 
@@ -68,6 +69,7 @@ class EntryCoinServiceTest {
         User user = userRepository.findByPhoneNumber(phoneNumber).orElse(null);
         assertThat(user).isNotNull();
         assertThat(user.getCoinCount()).isEqualTo(1);
+        assertThat(user.getTotalAcquiredCoins()).isEqualTo(1);
     }
 
     @Test
@@ -88,29 +90,32 @@ class EntryCoinServiceTest {
 
         // 최종 상태 확인
         assertThat(response3.getData().getCoinCount()).isEqualTo(3);
+        assertThat(response3.getData().getTotalAcquiredCoins()).isEqualTo(3);
         assertThat(response3.getData().getRemainingCoins()).isEqualTo(897);
 
         User user = userRepository.findByPhoneNumber(phoneNumber).orElse(null);
         assertThat(user).isNotNull();
         assertThat(user.getCoinCount()).isEqualTo(3);
+        assertThat(user.getTotalAcquiredCoins()).isEqualTo(3);
     }
 
     @Test
     @DisplayName("응모 코인 획득 - 한도 초과")
     void acquireCoin_ExceedsLimit() {
-        // Given: 이미 3개 코인을 보유한 사용자
+        // Given: 이미 누적 3개 코인을 획득한 사용자 (현재 보유는 3개)
         String phoneNumber = "010-1234-5680";
-        createUserWithCoins(phoneNumber, 3);
+        createUserWithCoins(phoneNumber, 3, 3); // 보유 3개, 누적 3개
 
         // When & Then: 추가 획득 시도 시 예외 발생
         assertThatThrownBy(() -> entryCoinService.acquireCoin(phoneNumber))
             .isInstanceOf(CoinException.CoinLimitExceededException.class)
-            .hasMessageContaining("한도를 초과");
+            .hasMessageContaining("누적 응모 코인 획득 한도");
 
         // 사용자의 코인 수는 변경되지 않아야 함
         User user = userRepository.findByPhoneNumber(phoneNumber).orElse(null);
         assertThat(user).isNotNull();
         assertThat(user.getCoinCount()).isEqualTo(3);
+        assertThat(user.getTotalAcquiredCoins()).isEqualTo(3);
     }
 
     @Test
@@ -260,10 +265,18 @@ class EntryCoinServiceTest {
      * 테스트용 사용자 생성 헬퍼 메서드
      */
     private User createUserWithCoins(String phoneNumber, int coinCount) {
+        return createUserWithCoins(phoneNumber, coinCount, coinCount);
+    }
+
+    /**
+     * 테스트용 사용자 생성 헬퍼 메서드 (누적 획득 코인 지정 가능)
+     */
+    private User createUserWithCoins(String phoneNumber, int coinCount, int totalAcquiredCoins) {
         User user = userRepository.findByPhoneNumber(phoneNumber)
                 .orElseGet(() -> User.builder()
                         .phoneNumber(phoneNumber)
                         .coinCount(0)
+                        .totalAcquiredCoins(0)
                         .build());
         
         // 코인 수량 직접 설정 (테스트용)
@@ -271,6 +284,7 @@ class EntryCoinServiceTest {
                 .id(user.getId())
                 .phoneNumber(phoneNumber)
                 .coinCount(coinCount)
+                .totalAcquiredCoins(totalAcquiredCoins)
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
