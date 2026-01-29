@@ -1,6 +1,5 @@
 package com.kidaristudio.vacationcouponlottery.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kidaristudio.vacationcouponlottery.domain.CouponType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,7 +8,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebM
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -19,14 +20,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 전체 API 엔드포인트의 실제 동작을 검증합니다.
  * 실제 서비스 계층과 데이터베이스를 사용하여 엔드투엔드 테스트를 수행합니다.
  */
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebMvc
 @ActiveProfiles("test")
 @Transactional
 class ApiIntegrationTest {
 
     @Autowired
+    private WebApplicationContext webApplicationContext;
+
     private MockMvc mockMvc;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+    }
 
     @Test
     @DisplayName("전체 API 플로우 통합 테스트 - 코인 획득부터 추첨까지")
@@ -150,16 +158,21 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.code").value("SUCCESS"));
 
         // 2. 휴가 쿠폰 응모
-        mockMvc.perform(post("/api/coupons/enter")
+        String entryResponse = mockMvc.perform(post("/api/coupons/enter")
                         .param("phoneNumber", phoneNumber)
                         .param("couponType", CouponType.ONE_DAY.name())
                         .param("coinCount", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("SUCCESS"));
+                .andExpect(jsonPath("$.code").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.entryId").exists())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-        // 응모 ID 추출 (실제 구현에서는 응답에서 ID를 파싱해야 함)
-        // 여기서는 테스트를 위해 1L로 가정
-        Long entryId = 1L;
+        // JSON 파싱을 통해 entryId 추출
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(entryResponse);
+        Long entryId = jsonNode.get("data").get("entryId").asLong();
 
         // 3. 코인 수량 확인 (응모 후 0개)
         mockMvc.perform(get("/api/coins/count")
@@ -215,7 +228,21 @@ class ApiIntegrationTest {
     void insufficientCoins_EntryFail() throws Exception {
         String phoneNumber = "010-8888-8888";
 
-        // 1. 코인 없이 응모 시도
+        // 1. 사용자 생성 (코인 1개 획득)
+        mockMvc.perform(post("/api/coins/acquire")
+                        .param("phoneNumber", phoneNumber))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("SUCCESS"));
+
+        // 2. 코인 1개로 1개 쿠폰 응모 (성공)
+        mockMvc.perform(post("/api/coupons/enter")
+                        .param("phoneNumber", phoneNumber)
+                        .param("couponType", CouponType.ONE_DAY.name())
+                        .param("coinCount", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("SUCCESS"));
+
+        // 3. 코인이 없는 상태에서 추가 응모 시도 (실패)
         mockMvc.perform(post("/api/coupons/enter")
                         .param("phoneNumber", phoneNumber)
                         .param("couponType", CouponType.ONE_DAY.name())

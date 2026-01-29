@@ -233,6 +233,21 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 리소스를 찾을 수 없음 예외 처리 (Spring Boot 3.x)
+     */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(
+            org.springframework.web.servlet.resource.NoResourceFoundException e, HttpServletRequest request) {
+        
+        logError(request, e, "리소스를 찾을 수 없음");
+        
+        String message = String.format("요청한 리소스를 찾을 수 없습니다: %s", e.getResourcePath());
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error("NOT_FOUND", message));
+    }
+
+    /**
      * HTTP 메시지 읽기 불가 예외 처리
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
