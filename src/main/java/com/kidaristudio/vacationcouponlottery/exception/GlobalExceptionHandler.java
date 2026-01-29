@@ -109,6 +109,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 메서드 인자 검증 실패 예외 처리 (Spring 6.1+)
+     */
+    @ExceptionHandler(org.springframework.web.method.annotation.HandlerMethodValidationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHandlerMethodValidationException(
+            org.springframework.web.method.annotation.HandlerMethodValidationException e, HttpServletRequest request) {
+        
+        logError(request, e, "메서드 인자 검증 실패");
+        
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error("VALIDATION_FAILED", "입력값 검증에 실패했습니다"));
+    }
+
+    /**
      * 유효성 검증 실패 예외 처리
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
