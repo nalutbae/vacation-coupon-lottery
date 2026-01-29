@@ -20,9 +20,23 @@ public interface LotteryResultRepository extends JpaRepository<LotteryResult, Lo
     List<LotteryResult> findByCouponTypeOrderByRankAsc(CouponType couponType);
 
     /**
+     * 쿠폰 타입별 추첨 결과 조회 (순위 순) - 서비스용 별칭
+     */
+    default List<LotteryResult> findByCouponTypeOrderByRank(CouponType couponType) {
+        return findByCouponTypeOrderByRankAsc(couponType);
+    }
+
+    /**
      * 전체 추첨 결과 조회 (쿠폰 타입, 순위 순)
      */
     List<LotteryResult> findAllByOrderByCouponTypeAscRankAsc();
+
+    /**
+     * 전체 추첨 결과 조회 (쿠폰 타입, 순위 순) - 서비스용 별칭
+     */
+    default List<LotteryResult> findAllOrderByCouponTypeAndRank() {
+        return findAllByOrderByCouponTypeAscRankAsc();
+    }
 
     /**
      * 특정 순위의 당첨자 조회
@@ -38,4 +52,9 @@ public interface LotteryResultRepository extends JpaRepository<LotteryResult, Lo
      * 특정 응모의 추첨 결과 조회
      */
     List<LotteryResult> findByEntryId(Long entryId);
+
+    /**
+     * 쿠폰 타입별 추첨 결과 삭제
+     */
+    void deleteByCouponType(CouponType couponType);
 }

@@ -31,6 +31,13 @@ public interface VacationCouponEntryRepository extends JpaRepository<VacationCou
     List<VacationCouponEntry> findByCouponTypeAndIsActiveTrue(CouponType couponType);
 
     /**
+     * 쿠폰 타입별 활성 응모 내역 조회 (추첨용)
+     */
+    default List<VacationCouponEntry> findActiveByCouponType(CouponType couponType) {
+        return findByCouponTypeAndIsActiveTrue(couponType);
+    }
+
+    /**
      * 사용자의 특정 쿠폰 타입 활성 응모 내역 조회
      */
     List<VacationCouponEntry> findByUserAndCouponTypeAndIsActiveTrue(User user, CouponType couponType);
