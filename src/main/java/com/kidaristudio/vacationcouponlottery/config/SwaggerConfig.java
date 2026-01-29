@@ -13,10 +13,15 @@ import java.util.List;
 /**
  * Swagger/OpenAPI 설정
  * API 문서화를 위한 설정을 제공합니다.
+ * 
+ * 컨트롤러의 @Tag 어노테이션과 함께 사용하여 API 문서를 생성합니다.
  */
 @Configuration
 public class SwaggerConfig {
-
+    
+    /**
+     * OpenAPI 기본 정보 설정
+     */
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
@@ -25,9 +30,9 @@ public class SwaggerConfig {
                         .description("직원들을 위한 휴가 쿠폰 추첨 시스템의 REST API 문서입니다.")
                         .version("1.0.0")
                         .contact(new Contact()
-                                .name("Kidari Studio")
-                                .email("support@kidaristudio.com")
-                                .url("https://kidaristudio.com"))
+                                .name("정태현(개발자)")
+                                .email("chomman@naver.com")
+                                .url("https://hyun-portfolio.vercel.app/"))
                         .license(new License()
                                 .name("MIT License")
                                 .url("https://opensource.org/licenses/MIT")))
