@@ -1,0 +1,43 @@
+# Docker 빌드 시 제외할 파일들
+
+# Git 관련
+.git
+.gitignore
+
+# IDE 관련
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Gradle 빌드 결과물
+build/
+.gradle/
+
+# 로그 파일
+*.log
+logs/
+
+# 임시 파일
+*.tmp
+*.temp
+
+# OS 관련
+.DS_Store
+Thumbs.db
+
+# 데이터 파일
+data/
+*.db
+*.mv.db
+*.trace.db
+
+# 문서 파일 (선택적)
+README.md
+DDL.md
+
+# Docker 관련
+Dockerfile
+docker-compose.yml
+.dockerignore
