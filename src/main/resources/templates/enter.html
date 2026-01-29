@@ -85,7 +85,6 @@
                                 <select class="form-select" id="couponType">
                                     <option value="ONE_DAY">1일 휴가</option>
                                     <option value="THREE_DAY">3일 휴가</option>
-                                    <option value="FIVE_DAY">5일 휴가</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -299,7 +298,7 @@
                                         <br>
                                         <small class="text-muted">
                                             응모 ID: ${entry.entryId} | 
-                                            사용 코인: ${entry.usedCoins}개 | 
+                                            사용 코인: ${entry.coinCount}개 | 
                                             응모일: ${new Date(entry.entryTime).toLocaleString('ko-KR')}
                                         </small>
                                     </div>
@@ -393,7 +392,6 @@
             switch (couponType) {
                 case 'ONE_DAY': return '1일 휴가';
                 case 'THREE_DAY': return '3일 휴가';
-                case 'FIVE_DAY': return '5일 휴가';
                 default: return couponType;
             }
         }

@@ -93,10 +93,6 @@
                             <h4 id="threeDayWinners">-</h4>
                             <small>3일 휴가</small>
                         </div>
-                        <div class="col-md-3">
-                            <h4 id="fiveDayWinners">-</h4>
-                            <small>5일 휴가</small>
-                        </div>
                     </div>
                 </div>
 
@@ -109,7 +105,6 @@
                                 <option value="ALL">전체 보기</option>
                                 <option value="ONE_DAY">1일 휴가</option>
                                 <option value="THREE_DAY">3일 휴가</option>
-                                <option value="FIVE_DAY">5일 휴가</option>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -325,7 +320,6 @@
             switch (couponType) {
                 case 'ONE_DAY': return '1일 휴가';
                 case 'THREE_DAY': return '3일 휴가';
-                case 'FIVE_DAY': return '5일 휴가';
                 default: return couponType;
             }
         }
