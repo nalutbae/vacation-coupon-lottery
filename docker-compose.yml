@@ -1,0 +1,25 @@
+services:
+  vacation-coupon-lottery:
+    build: .
+    container_name: vacation-coupon-lottery
+    ports:
+      - "8080:8080"
+    volumes:
+      # 데이터 영속성을 위한 볼륨 마운트
+      - ./data:/app/data
+    environment:
+      # 운영 환경 설정
+      - SPRING_PROFILES_ACTIVE=prod
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  # 데이터 볼륨 정의
+  vacation_data:
+    driver: local
