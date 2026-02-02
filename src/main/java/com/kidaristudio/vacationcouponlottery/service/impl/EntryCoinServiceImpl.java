@@ -5,6 +5,7 @@ import com.kidaristudio.vacationcouponlottery.dto.ApiResponse;
 import com.kidaristudio.vacationcouponlottery.dto.CoinAcquisitionResult;
 import com.kidaristudio.vacationcouponlottery.dto.CoinStatusResponse;
 import com.kidaristudio.vacationcouponlottery.exception.CoinException;
+import com.kidaristudio.vacationcouponlottery.exception.EntryException;
 import com.kidaristudio.vacationcouponlottery.repository.SystemConfigRepository;
 import com.kidaristudio.vacationcouponlottery.repository.UserRepository;
 import com.kidaristudio.vacationcouponlottery.service.EntryCoinService;
@@ -144,7 +145,7 @@ public class EntryCoinServiceImpl implements EntryCoinService {
         log.debug("사용자 코인 차감: phoneNumber={}, amount={}", phoneNumber, amount);
 
         User user = userRepository.findByPhoneNumberWithLock(phoneNumber)
-                .orElseThrow(() -> new CoinException.InsufficientCoinsException(messageService));
+                .orElseThrow(() -> new EntryException.UserNotFoundException(messageService));
 
         if (!user.canEnterLottery(amount)) {
             throw new CoinException.InsufficientCoinsException(messageService);

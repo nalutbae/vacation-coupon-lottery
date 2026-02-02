@@ -14,6 +14,7 @@ import com.kidaristudio.vacationcouponlottery.service.VacationCouponService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -39,7 +40,7 @@ public class VacationCouponServiceImpl implements VacationCouponService {
     private final MessageService messageService;
 
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public ApiResponse<EntryResult> enterLottery(String phoneNumber, CouponType couponType, int coinCount) {
         log.info("휴가 쿠폰 응모 요청: phoneNumber={}, couponType={}, coinCount={}", 
                 phoneNumber, couponType, coinCount);
@@ -48,19 +49,14 @@ public class VacationCouponServiceImpl implements VacationCouponService {
             // 1. 입력 값 검증
             validateEntryRequest(phoneNumber, couponType, coinCount);
 
-            // 2. 사용자 조회 또는 생성
-            User user = userRepository.findByPhoneNumber(phoneNumber)
+            // 2. 사용자 조회 (락 적용하여 동시성 제어)
+            User user = userRepository.findByPhoneNumberWithLock(phoneNumber)
                     .orElseThrow(() -> new EntryException.UserNotFoundException(messageService));
 
-            // 3. 사용자 코인 보유량 확인
-            if (!user.canEnterLottery(coinCount)) {
-                throw new CoinException.InsufficientCoinsException(messageService);
-            }
-
-            // 4. 코인 차감
+            // 3. 코인 차감 (락을 사용하여 안전하게 처리됨)
             entryCoinService.deductCoins(phoneNumber, coinCount);
 
-            // 5. 응모 등록
+            // 4. 응모 등록
             VacationCouponEntry entry = VacationCouponEntry.builder()
                     .user(user)
                     .couponType(couponType)
@@ -70,11 +66,11 @@ public class VacationCouponServiceImpl implements VacationCouponService {
 
             VacationCouponEntry savedEntry = entryRepository.save(entry);
 
-            // 6. 사용자 정보 다시 조회 (코인 차감 후 상태)
+            // 5. 사용자 정보 다시 조회 (코인 차감 후 상태)
             User updatedUser = userRepository.findByPhoneNumber(phoneNumber)
                     .orElseThrow(() -> new EntryException.UserNotFoundException(messageService));
 
-            // 7. 결과 생성
+            // 6. 결과 생성
             EntryResult result = EntryResult.builder()
                     .entryId(savedEntry.getId())
                     .phoneNumber(phoneNumber)
