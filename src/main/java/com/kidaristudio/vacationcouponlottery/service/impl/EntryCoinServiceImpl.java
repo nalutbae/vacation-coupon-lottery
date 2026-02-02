@@ -8,6 +8,7 @@ import com.kidaristudio.vacationcouponlottery.exception.CoinException;
 import com.kidaristudio.vacationcouponlottery.repository.SystemConfigRepository;
 import com.kidaristudio.vacationcouponlottery.repository.UserRepository;
 import com.kidaristudio.vacationcouponlottery.service.EntryCoinService;
+import com.kidaristudio.vacationcouponlottery.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class EntryCoinServiceImpl implements EntryCoinService {
 
     private final UserRepository userRepository;
     private final SystemConfigRepository systemConfigRepository;
+    private final MessageService messageService;
 
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
@@ -40,7 +42,7 @@ public class EntryCoinServiceImpl implements EntryCoinService {
             // 1. 전체 코인 잔여량 확인
             int remainingCoins = systemConfigRepository.getCurrentRemainingCoins();
             if (remainingCoins <= 0) {
-                throw new CoinException.NoRemainingCoinsException();
+                throw new CoinException.NoRemainingCoinsException(messageService);
             }
 
             // 2. 사용자 조회 또는 생성 (락 적용)
@@ -49,13 +51,13 @@ public class EntryCoinServiceImpl implements EntryCoinService {
 
             // 3. 사용자별 누적 코인 획득 한도 확인
             if (!user.canAcquireMoreCoins()) {
-                throw new CoinException.CoinLimitExceededException("누적 응모 코인 획득 한도(3개)에 도달했습니다.");
+                throw new CoinException.CoinLimitExceededException(messageService);
             }
 
             // 4. 원자적 코인 분배
             boolean success = systemConfigRepository.decrementRemainingCoins(1);
             if (!success) {
-                throw new CoinException.NoRemainingCoinsException("동시 요청으로 인해 코인이 소진되었습니다.");
+                throw new CoinException.NoRemainingCoinsException(messageService);
             }
 
             // 5. 사용자 코인 획득 (누적 획득 수도 함께 증가)
@@ -75,14 +77,14 @@ public class EntryCoinServiceImpl implements EntryCoinService {
             log.info("응모 코인 획득 성공: phoneNumber={}, coinCount={}, totalAcquiredCoins={}, remainingCoins={}", 
                     phoneNumber, user.getCoinCount(), user.getTotalAcquiredCoins(), newRemainingCoins);
 
-            return ApiResponse.success("응모 코인을 성공적으로 획득했습니다.", result);
+            return ApiResponse.success(messageService.getMessage("success.coin.acquired"), result);
 
         } catch (CoinException.CoinLimitExceededException | CoinException.NoRemainingCoinsException e) {
             log.warn("응모 코인 획득 실패: phoneNumber={}, reason={}", phoneNumber, e.getErrorMessage());
             throw e;
         } catch (Exception e) {
             log.error("응모 코인 획득 중 예상치 못한 오류 발생: phoneNumber={}", phoneNumber, e);
-            throw new CoinException.CoinAcquisitionFailedException("응모 코인 획득 중 오류가 발생했습니다.", e);
+            throw new CoinException.CoinAcquisitionFailedException(messageService);
         }
     }
 
@@ -142,11 +144,10 @@ public class EntryCoinServiceImpl implements EntryCoinService {
         log.debug("사용자 코인 차감: phoneNumber={}, amount={}", phoneNumber, amount);
 
         User user = userRepository.findByPhoneNumberWithLock(phoneNumber)
-                .orElseThrow(() -> new CoinException.InsufficientCoinsException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CoinException.InsufficientCoinsException(messageService));
 
         if (!user.canEnterLottery(amount)) {
-            throw new CoinException.InsufficientCoinsException(
-                    String.format("보유 코인이 부족합니다. 보유: %d개, 필요: %d개", user.getCoinCount(), amount));
+            throw new CoinException.InsufficientCoinsException(messageService);
         }
 
         user.decreaseCoinCount(amount);
@@ -161,11 +162,10 @@ public class EntryCoinServiceImpl implements EntryCoinService {
         log.debug("사용자 코인 반환: phoneNumber={}, amount={}", phoneNumber, amount);
 
         User user = userRepository.findByPhoneNumberWithLock(phoneNumber)
-                .orElseThrow(() -> new CoinException.CoinAcquisitionFailedException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CoinException.CoinAcquisitionFailedException(messageService));
 
         if (user.getCoinCount() + amount > 3) {
-            throw new CoinException.CoinLimitExceededException(
-                    String.format("코인 반환 후 한도를 초과합니다. 현재: %d개, 반환: %d개", user.getCoinCount(), amount));
+            throw new CoinException.CoinLimitExceededException(messageService);
         }
 
         user.increaseCoinCount(amount);

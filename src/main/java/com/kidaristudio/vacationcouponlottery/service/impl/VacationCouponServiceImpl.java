@@ -9,6 +9,7 @@ import com.kidaristudio.vacationcouponlottery.exception.EntryException;
 import com.kidaristudio.vacationcouponlottery.repository.UserRepository;
 import com.kidaristudio.vacationcouponlottery.repository.VacationCouponEntryRepository;
 import com.kidaristudio.vacationcouponlottery.service.EntryCoinService;
+import com.kidaristudio.vacationcouponlottery.service.MessageService;
 import com.kidaristudio.vacationcouponlottery.service.VacationCouponService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class VacationCouponServiceImpl implements VacationCouponService {
     private final VacationCouponEntryRepository entryRepository;
     private final UserRepository userRepository;
     private final EntryCoinService entryCoinService;
+    private final MessageService messageService;
 
     @Override
     @Transactional
@@ -48,12 +50,11 @@ public class VacationCouponServiceImpl implements VacationCouponService {
 
             // 2. 사용자 조회 또는 생성
             User user = userRepository.findByPhoneNumber(phoneNumber)
-                    .orElseThrow(() -> new EntryException.UserNotFoundException("사용자를 찾을 수 없습니다: " + phoneNumber));
+                    .orElseThrow(() -> new EntryException.UserNotFoundException(messageService));
 
             // 3. 사용자 코인 보유량 확인
             if (!user.canEnterLottery(coinCount)) {
-                throw new CoinException.InsufficientCoinsException(
-                        String.format("보유 코인이 부족합니다. 보유: %d개, 필요: %d개", user.getCoinCount(), coinCount));
+                throw new CoinException.InsufficientCoinsException(messageService);
             }
 
             // 4. 코인 차감
@@ -71,7 +72,7 @@ public class VacationCouponServiceImpl implements VacationCouponService {
 
             // 6. 사용자 정보 다시 조회 (코인 차감 후 상태)
             User updatedUser = userRepository.findByPhoneNumber(phoneNumber)
-                    .orElseThrow(() -> new EntryException.UserNotFoundException("사용자를 찾을 수 없습니다: " + phoneNumber));
+                    .orElseThrow(() -> new EntryException.UserNotFoundException(messageService));
 
             // 7. 결과 생성
             EntryResult result = EntryResult.builder()
@@ -87,14 +88,14 @@ public class VacationCouponServiceImpl implements VacationCouponService {
             log.info("휴가 쿠폰 응모 성공: phoneNumber={}, entryId={}, couponType={}, usedCoins={}", 
                     phoneNumber, savedEntry.getId(), couponType, coinCount);
 
-            return ApiResponse.success("휴가 쿠폰 응모가 완료되었습니다.", result);
+            return ApiResponse.success(messageService.getMessage("success.entry.registered"), result);
 
         } catch (CoinException.InsufficientCoinsException | EntryException.UserNotFoundException e) {
             log.warn("휴가 쿠폰 응모 실패: phoneNumber={}, reason={}", phoneNumber, e.getErrorMessage());
             throw e;
         } catch (Exception e) {
             log.error("휴가 쿠폰 응모 중 예상치 못한 오류 발생: phoneNumber={}", phoneNumber, e);
-            throw new EntryException.EntryProcessingException("휴가 쿠폰 응모 중 오류가 발생했습니다.", e);
+            throw new EntryException.EntryProcessingException(messageService);
         }
     }
 
@@ -109,21 +110,21 @@ public class VacationCouponServiceImpl implements VacationCouponService {
 
             // 2. 응모 내역 조회
             VacationCouponEntry entry = entryRepository.findById(entryId)
-                    .orElseThrow(() -> new EntryException.EntryNotFoundException("응모 내역을 찾을 수 없습니다: " + entryId));
+                    .orElseThrow(() -> new EntryException.EntryNotFoundException(messageService));
 
             // 3. 응모자 본인 확인
             if (!entry.getUser().getPhoneNumber().equals(phoneNumber)) {
-                throw new EntryException.UnauthorizedAccessException("본인의 응모 내역만 취소할 수 있습니다.");
+                throw new EntryException.UnauthorizedAccessException(messageService);
             }
 
             // 4. 응모 상태 확인
             if (!entry.getIsActive()) {
-                throw new EntryException.AlreadyCancelledException("이미 취소된 응모입니다.");
+                throw new EntryException.AlreadyCancelledException(messageService);
             }
 
             // 5. 당첨 여부 확인 (당첨된 응모는 취소 불가)
             if (entry.isWinner()) {
-                throw new EntryException.WinnerCannotCancelException("당첨된 응모는 취소할 수 없습니다.");
+                throw new EntryException.WinnerCannotCancelException(messageService);
             }
 
             // 6. 응모 취소
@@ -135,7 +136,7 @@ public class VacationCouponServiceImpl implements VacationCouponService {
 
             // 8. 사용자 정보 다시 조회 (코인 반환 후 상태)
             User updatedUser = userRepository.findByPhoneNumber(phoneNumber)
-                    .orElseThrow(() -> new EntryException.UserNotFoundException("사용자를 찾을 수 없습니다: " + phoneNumber));
+                    .orElseThrow(() -> new EntryException.UserNotFoundException(messageService));
 
             // 9. 결과 생성
             CancelResult result = CancelResult.builder()
@@ -150,7 +151,7 @@ public class VacationCouponServiceImpl implements VacationCouponService {
             log.info("휴가 쿠폰 응모 취소 성공: phoneNumber={}, entryId={}, returnedCoins={}", 
                     phoneNumber, entryId, entry.getCoinCount());
 
-            return ApiResponse.success("휴가 쿠폰 응모가 취소되었습니다.", result);
+            return ApiResponse.success(messageService.getMessage("success.entry.cancelled"), result);
 
         } catch (EntryException.EntryNotFoundException | EntryException.UnauthorizedAccessException | 
                  EntryException.AlreadyCancelledException | EntryException.WinnerCannotCancelException e) {
@@ -160,7 +161,7 @@ public class VacationCouponServiceImpl implements VacationCouponService {
         } catch (Exception e) {
             log.error("휴가 쿠폰 응모 취소 중 예상치 못한 오류 발생: phoneNumber={}, entryId={}", 
                     phoneNumber, entryId, e);
-            throw new EntryException.EntryProcessingException("휴가 쿠폰 응모 취소 중 오류가 발생했습니다.", e);
+            throw new EntryException.EntryProcessingException(messageService);
         }
     }
 
@@ -218,7 +219,7 @@ public class VacationCouponServiceImpl implements VacationCouponService {
 
         } catch (Exception e) {
             log.error("전체 응모 현황 조회 중 오류 발생", e);
-            throw new EntryException.EntryProcessingException("전체 응모 현황 조회 중 오류가 발생했습니다.", e);
+            throw new EntryException.EntryProcessingException(messageService);
         }
     }
 
@@ -227,16 +228,16 @@ public class VacationCouponServiceImpl implements VacationCouponService {
      */
     private void validateEntryRequest(String phoneNumber, CouponType couponType, int coinCount) {
         if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
-            throw new EntryException.InvalidRequestException("전화번호는 필수입니다.");
+            throw new EntryException.InvalidRequestException(messageService);
         }
         if (couponType == null) {
-            throw new EntryException.InvalidRequestException("쿠폰 타입은 필수입니다.");
+            throw new EntryException.InvalidRequestException(messageService);
         }
         if (coinCount <= 0) {
-            throw new EntryException.InvalidRequestException("응모 코인 수는 1개 이상이어야 합니다.");
+            throw new EntryException.InvalidRequestException(messageService);
         }
         if (coinCount > 3) {
-            throw new EntryException.InvalidRequestException("한 번에 최대 3개까지만 응모할 수 있습니다.");
+            throw new EntryException.InvalidRequestException(messageService);
         }
     }
 
@@ -245,10 +246,10 @@ public class VacationCouponServiceImpl implements VacationCouponService {
      */
     private void validateCancelRequest(String phoneNumber, Long entryId) {
         if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
-            throw new EntryException.InvalidRequestException("전화번호는 필수입니다.");
+            throw new EntryException.InvalidRequestException(messageService);
         }
         if (entryId == null || entryId <= 0) {
-            throw new EntryException.InvalidRequestException("유효한 응모 ID가 필요합니다.");
+            throw new EntryException.InvalidRequestException(messageService);
         }
     }
 

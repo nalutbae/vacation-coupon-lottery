@@ -1,11 +1,11 @@
 package com.kidaristudio.vacationcouponlottery.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kidaristudio.vacationcouponlottery.dto.ApiResponse;
 import com.kidaristudio.vacationcouponlottery.dto.CoinAcquisitionResult;
 import com.kidaristudio.vacationcouponlottery.dto.CoinStatusResponse;
 import com.kidaristudio.vacationcouponlottery.exception.CoinException;
 import com.kidaristudio.vacationcouponlottery.service.EntryCoinService;
+import com.kidaristudio.vacationcouponlottery.service.MessageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,12 +14,11 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * EntryCoinController 통합 테스트
@@ -31,11 +30,11 @@ class EntryCoinControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @MockBean
     private EntryCoinService entryCoinService;
+
+    @MockBean
+    private MessageService messageService;
 
     @Test
     @DisplayName("응모 코인 획득 API - 성공")
@@ -80,7 +79,7 @@ class EntryCoinControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COIN_LIMIT_EXCEEDED"))
-                .andExpect(jsonPath("$.message").value("응모 코인 한도를 초과했습니다"));
+                .andExpect(jsonPath("$.message").value("응모 코인 한도를 초과했습니다. (최대 3개)"));
     }
 
     @Test
@@ -98,7 +97,7 @@ class EntryCoinControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("NO_REMAINING_COINS"))
-                .andExpect(jsonPath("$.message").value("응모 코인이 모두 소진되었습니다"));
+                .andExpect(jsonPath("$.message").value("응모 코인이 모두 소진되었습니다."));
     }
 
     @Test

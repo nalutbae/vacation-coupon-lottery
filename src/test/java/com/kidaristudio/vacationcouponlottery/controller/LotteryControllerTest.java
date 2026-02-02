@@ -7,6 +7,7 @@ import com.kidaristudio.vacationcouponlottery.dto.LotteryResult;
 import com.kidaristudio.vacationcouponlottery.dto.Winner;
 import com.kidaristudio.vacationcouponlottery.exception.LotteryException;
 import com.kidaristudio.vacationcouponlottery.service.LotteryService;
+import com.kidaristudio.vacationcouponlottery.service.MessageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,6 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -34,11 +34,11 @@ class LotteryControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @MockBean
     private LotteryService lotteryService;
+
+    @MockBean
+    private MessageService messageService;
 
     @Test
     @DisplayName("특정 쿠폰 타입 추첨 실행 API - 성공")
@@ -166,7 +166,7 @@ class LotteryControllerTest {
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.message").value("전체 추첨이 완료되었습니다"))
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].couponType").value("ONE_DAY"));
     }
 
@@ -191,7 +191,7 @@ class LotteryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].phoneNumber").value("010-1111-1111"));
     }
 

@@ -1,8 +1,11 @@
 package com.kidaristudio.vacationcouponlottery.exception;
 
+import com.kidaristudio.vacationcouponlottery.service.MessageService;
+
 /**
  * 응모 코인 관련 예외 클래스들
  * 코인 획득, 사용, 관리 과정에서 발생하는 예외를 정의합니다.
+ * MessageService를 통해 국제화된 메시지를 제공합니다.
  */
 public class CoinException {
 
@@ -12,6 +15,10 @@ public class CoinException {
     public static class InsufficientCoinsException extends BusinessException {
         public InsufficientCoinsException() {
             super("INSUFFICIENT_COINS", "응모 코인이 부족합니다.");
+        }
+        
+        public InsufficientCoinsException(MessageService messageService) {
+            super("INSUFFICIENT_COINS", messageService.getMessage("INSUFFICIENT_COINS"));
         }
         
         public InsufficientCoinsException(String message) {
@@ -27,6 +34,10 @@ public class CoinException {
             super("COIN_LIMIT_EXCEEDED", "응모 코인 한도를 초과했습니다. (최대 3개)");
         }
         
+        public CoinLimitExceededException(MessageService messageService) {
+            super("COIN_LIMIT_EXCEEDED", messageService.getMessage("COIN_LIMIT_EXCEEDED"));
+        }
+        
         public CoinLimitExceededException(String message) {
             super("COIN_LIMIT_EXCEEDED", message);
         }
@@ -40,6 +51,10 @@ public class CoinException {
             super("NO_REMAINING_COINS", "응모 코인이 모두 소진되었습니다.");
         }
         
+        public NoRemainingCoinsException(MessageService messageService) {
+            super("NO_REMAINING_COINS", messageService.getMessage("NO_REMAINING_COINS"));
+        }
+        
         public NoRemainingCoinsException(String message) {
             super("NO_REMAINING_COINS", message);
         }
@@ -51,6 +66,10 @@ public class CoinException {
     public static class CoinAcquisitionFailedException extends BusinessException {
         public CoinAcquisitionFailedException() {
             super("COIN_ACQUISITION_FAILED", "응모 코인 획득에 실패했습니다.");
+        }
+        
+        public CoinAcquisitionFailedException(MessageService messageService) {
+            super("COIN_ACQUISITION_FAILED", messageService.getMessage("COIN_ACQUISITION_FAILED"));
         }
         
         public CoinAcquisitionFailedException(String message) {

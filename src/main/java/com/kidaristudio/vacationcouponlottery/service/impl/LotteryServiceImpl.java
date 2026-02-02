@@ -10,6 +10,7 @@ import com.kidaristudio.vacationcouponlottery.repository.LotteryResultRepository
 import com.kidaristudio.vacationcouponlottery.repository.VacationCouponEntryRepository;
 import com.kidaristudio.vacationcouponlottery.service.FairLotteryAlgorithm;
 import com.kidaristudio.vacationcouponlottery.service.LotteryService;
+import com.kidaristudio.vacationcouponlottery.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ public class LotteryServiceImpl implements LotteryService {
     private final VacationCouponEntryRepository entryRepository;
     private final LotteryResultRepository lotteryResultRepository;
     private final FairLotteryAlgorithm fairLotteryAlgorithm;
+    private final MessageService messageService;
 
     /**
      * 쿠폰당 당첨자 수 (요구사항에 따라 3명)
@@ -50,14 +52,14 @@ public class LotteryServiceImpl implements LotteryService {
 
             // 2. 이미 추첨이 완료되었는지 확인
             if (isLotteryAlreadyCompleted(couponType)) {
-                throw new LotteryException.LotteryAlreadyCompletedException(couponType.getDisplayName());
+                throw new LotteryException.LotteryAlreadyCompletedException(messageService);
             }
 
             // 3. 해당 쿠폰 타입의 활성 응모 내역 조회
             List<VacationCouponEntry> activeEntries = entryRepository.findActiveByCouponType(couponType);
             
             if (activeEntries.isEmpty()) {
-                throw new LotteryException.NoEntrantsException(couponType.getDisplayName());
+                throw new LotteryException.NoEntrantsException(messageService);
             }
 
             log.info("추첨 대상 응모자: {}명, 총 응모 코인: {}개", 
@@ -75,14 +77,14 @@ public class LotteryServiceImpl implements LotteryService {
 
             log.info("추첨 실행 완료: couponType={}, 당첨자={}명", couponType, winners.size());
 
-            return ApiResponse.success("추첨이 성공적으로 완료되었습니다.", result);
+            return ApiResponse.success(messageService.getMessage("success.lottery.completed"), result);
 
         } catch (LotteryException.BaseLotteryException e) {
             log.warn("추첨 실행 실패: couponType={}, reason={}", couponType, e.getErrorMessage());
             throw e;
         } catch (Exception e) {
             log.error("추첨 실행 중 예상치 못한 오류 발생: couponType={}", couponType, e);
-            throw new LotteryException.LotteryProcessingException("추첨 실행 중 오류가 발생했습니다.", e);
+            throw new LotteryException.LotteryProcessingException(messageService);
         }
     }
 
@@ -108,7 +110,7 @@ public class LotteryServiceImpl implements LotteryService {
 
             log.info("전체 추첨 실행 완료: 성공한 추첨={}개", results.size());
 
-            return ApiResponse.success("전체 추첨이 완료되었습니다.", results);
+            return ApiResponse.success(messageService.getMessage("success.lottery.completed"), results);
 
         } catch (Exception e) {
             log.error("전체 추첨 실행 중 오류 발생", e);
@@ -193,7 +195,7 @@ public class LotteryServiceImpl implements LotteryService {
      */
     private void validateLotteryRequest(CouponType couponType) {
         if (couponType == null) {
-            throw new LotteryException.InvalidLotteryRequestException("쿠폰 타입은 필수입니다.");
+            throw new LotteryException.InvalidLotteryRequestException(messageService);
         }
     }
 

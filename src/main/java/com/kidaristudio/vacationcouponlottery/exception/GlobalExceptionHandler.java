@@ -1,6 +1,8 @@
 package com.kidaristudio.vacationcouponlottery.exception;
 
 import com.kidaristudio.vacationcouponlottery.dto.ApiResponse;
+import com.kidaristudio.vacationcouponlottery.service.MessageService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
@@ -24,12 +26,15 @@ import java.util.stream.Collectors;
 
 /**
  * 글로벌 예외 핸들러
- * 모든 예외를 일관된 형식으로 처리하고 한글 오류 메시지를 제공합니다.
+ * 모든 예외를 일관된 형식으로 처리하고 국제화된 한글 오류 메시지를 제공합니다.
  * API 오류 추적을 위한 로깅도 포함합니다.
  */
 @Slf4j
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final MessageService messageService;
 
     /**
      * 응모 코인 관련 예외 처리
@@ -118,7 +123,7 @@ public class GlobalExceptionHandler {
         logError(request, e, "메서드 인자 검증 실패");
         
         return ResponseEntity.badRequest()
-                .body(ApiResponse.error("VALIDATION_FAILED", "입력값 검증에 실패했습니다"));
+                .body(ApiResponse.error("VALIDATION_FAILED", messageService.getMessage("VALIDATION_FAILED")));
     }
 
     /**
@@ -135,7 +140,7 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         
         return ResponseEntity.badRequest()
-                .body(ApiResponse.error("VALIDATION_FAILED", "입력값 검증에 실패했습니다: " + errorMessage));
+                .body(ApiResponse.error("VALIDATION_FAILED", messageService.getMessage("VALIDATION_FAILED") + ": " + errorMessage));
     }
 
     /**
@@ -152,7 +157,7 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         
         return ResponseEntity.badRequest()
-                .body(ApiResponse.error("BINDING_ERROR", "요청 데이터 바인딩에 실패했습니다: " + errorMessage));
+                .body(ApiResponse.error("BINDING_ERROR", messageService.getMessage("BINDING_ERROR") + ": " + errorMessage));
     }
 
     /**
@@ -169,7 +174,7 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         
         return ResponseEntity.badRequest()
-                .body(ApiResponse.error("CONSTRAINT_VIOLATION", "제약 조건 위반: " + errorMessage));
+                .body(ApiResponse.error("CONSTRAINT_VIOLATION", messageService.getMessage("CONSTRAINT_VIOLATION") + ": " + errorMessage));
     }
 
     /**
@@ -181,7 +186,7 @@ public class GlobalExceptionHandler {
         
         logError(request, e, "필수 파라미터 누락");
         
-        String message = String.format("필수 파라미터가 누락되었습니다: %s", e.getParameterName());
+        String message = String.format("%s: %s", messageService.getMessage("MISSING_PARAMETER"), e.getParameterName());
         
         return ResponseEntity.badRequest()
                 .body(ApiResponse.error("MISSING_PARAMETER", message));
@@ -196,7 +201,7 @@ public class GlobalExceptionHandler {
         
         logError(request, e, "메서드 인자 타입 불일치");
         
-        String message = String.format("잘못된 파라미터 타입입니다: %s", e.getName());
+        String message = String.format("%s: %s", messageService.getMessage("TYPE_MISMATCH"), e.getName());
         
         return ResponseEntity.badRequest()
                 .body(ApiResponse.error("TYPE_MISMATCH", message));
@@ -211,7 +216,7 @@ public class GlobalExceptionHandler {
         
         logError(request, e, "지원하지 않는 HTTP 메서드");
         
-        String message = String.format("지원하지 않는 HTTP 메서드입니다: %s", e.getMethod());
+        String message = String.format("%s: %s", messageService.getMessage("METHOD_NOT_ALLOWED"), e.getMethod());
         
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(ApiResponse.error("METHOD_NOT_ALLOWED", message));
@@ -226,7 +231,7 @@ public class GlobalExceptionHandler {
         
         logError(request, e, "핸들러를 찾을 수 없음");
         
-        String message = String.format("요청한 리소스를 찾을 수 없습니다: %s %s", e.getHttpMethod(), e.getRequestURL());
+        String message = String.format("%s: %s %s", messageService.getMessage("NOT_FOUND"), e.getHttpMethod(), e.getRequestURL());
         
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error("NOT_FOUND", message));
@@ -241,7 +246,7 @@ public class GlobalExceptionHandler {
         
         logError(request, e, "리소스를 찾을 수 없음");
         
-        String message = String.format("요청한 리소스를 찾을 수 없습니다: %s", e.getResourcePath());
+        String message = String.format("%s: %s", messageService.getMessage("NOT_FOUND"), e.getResourcePath());
         
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error("NOT_FOUND", message));
@@ -257,7 +262,7 @@ public class GlobalExceptionHandler {
         logError(request, e, "HTTP 메시지 읽기 불가");
         
         return ResponseEntity.badRequest()
-                .body(ApiResponse.error("MESSAGE_NOT_READABLE", "요청 본문을 읽을 수 없습니다. JSON 형식을 확인해주세요."));
+                .body(ApiResponse.error("MESSAGE_NOT_READABLE", messageService.getMessage("MESSAGE_NOT_READABLE")));
     }
 
     /**
@@ -270,7 +275,7 @@ public class GlobalExceptionHandler {
         logError(request, e, "데이터베이스 접근 예외 발생");
         
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("DATABASE_ERROR", "데이터베이스 처리 중 오류가 발생했습니다."));
+                .body(ApiResponse.error("DATABASE_ERROR", messageService.getMessage("DATABASE_ERROR")));
     }
 
     /**
@@ -283,7 +288,7 @@ public class GlobalExceptionHandler {
         logError(request, e, "예상하지 못한 예외 발생");
         
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."));
+                .body(ApiResponse.error("INTERNAL_SERVER_ERROR", messageService.getMessage("INTERNAL_SERVER_ERROR")));
     }
 
     /**

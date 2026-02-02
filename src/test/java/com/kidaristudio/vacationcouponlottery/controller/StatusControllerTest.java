@@ -3,6 +3,7 @@ package com.kidaristudio.vacationcouponlottery.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kidaristudio.vacationcouponlottery.domain.CouponType;
 import com.kidaristudio.vacationcouponlottery.dto.*;
+import com.kidaristudio.vacationcouponlottery.service.MessageService;
 import com.kidaristudio.vacationcouponlottery.service.StatusService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,9 @@ class StatusControllerTest {
 
     @MockBean
     private StatusService statusService;
+
+    @MockBean
+    private MessageService messageService;
 
     @Test
     @DisplayName("사용자 개인 응모 현황 조회 API - 성공")

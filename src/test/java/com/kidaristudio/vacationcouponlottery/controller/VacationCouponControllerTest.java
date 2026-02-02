@@ -5,6 +5,7 @@ import com.kidaristudio.vacationcouponlottery.domain.CouponType;
 import com.kidaristudio.vacationcouponlottery.dto.*;
 import com.kidaristudio.vacationcouponlottery.exception.CoinException;
 import com.kidaristudio.vacationcouponlottery.exception.EntryException;
+import com.kidaristudio.vacationcouponlottery.service.MessageService;
 import com.kidaristudio.vacationcouponlottery.service.VacationCouponService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,9 @@ class VacationCouponControllerTest {
 
     @MockBean
     private VacationCouponService vacationCouponService;
+
+    @MockBean
+    private MessageService messageService;
 
     @Test
     @DisplayName("휴가 쿠폰 응모 API - 성공")
@@ -164,7 +168,7 @@ class VacationCouponControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("ENTRY_NOT_FOUND"))
-                .andExpect(jsonPath("$.message").value("응모 내역을 찾을 수 없습니다"));
+                .andExpect(jsonPath("$.message").value("응모 내역을 찾을 수 없습니다."));
     }
 
     @Test

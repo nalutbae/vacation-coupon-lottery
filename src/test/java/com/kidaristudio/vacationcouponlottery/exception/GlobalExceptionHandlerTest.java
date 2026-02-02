@@ -1,10 +1,14 @@
 package com.kidaristudio.vacationcouponlottery.exception;
 
 import com.kidaristudio.vacationcouponlottery.dto.ApiResponse;
+import com.kidaristudio.vacationcouponlottery.service.MessageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,15 +33,19 @@ import static org.mockito.Mockito.when;
 /**
  * GlobalExceptionHandler 단위 테스트
  */
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class GlobalExceptionHandlerTest {
 
+    @Mock
+    private MessageService messageService;
+
+    @InjectMocks
     private GlobalExceptionHandler exceptionHandler;
+    
     private MockHttpServletRequest request;
 
     @BeforeEach
     void setUp() {
-        exceptionHandler = new GlobalExceptionHandler();
         request = new MockHttpServletRequest();
         request.setMethod("POST");
         request.setRequestURI("/api/test");
@@ -126,6 +134,8 @@ class GlobalExceptionHandlerTest {
     @DisplayName("바인딩 예외 처리")
     void handleBindException_Success() {
         // Given
+        when(messageService.getMessage("BINDING_ERROR")).thenReturn("요청 데이터 바인딩에 실패했습니다.");
+        
         BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "testObject");
         bindingResult.addError(new FieldError("testObject", "coinCount", "코인 수량은 숫자여야 합니다."));
         
@@ -137,7 +147,7 @@ class GlobalExceptionHandlerTest {
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().getCode()).isEqualTo("BINDING_ERROR");
-        assertThat(response.getBody().getMessage()).contains("요청 데이터 바인딩에 실패했습니다");
+        assertThat(response.getBody().getMessage()).contains("요청 데이터 바인딩에 실패했습니다.");
         assertThat(response.getBody().getMessage()).contains("코인 수량은 숫자여야 합니다");
     }
 
@@ -145,6 +155,8 @@ class GlobalExceptionHandlerTest {
     @DisplayName("제약 조건 위반 예외 처리")
     void handleConstraintViolationException_Success() {
         // Given
+        when(messageService.getMessage("CONSTRAINT_VIOLATION")).thenReturn("제약 조건 위반이 발생했습니다.");
+        
         ConstraintViolation<?> violation = mock(ConstraintViolation.class);
         when(violation.getMessage()).thenReturn("전화번호 형식이 올바르지 않습니다.");
         
@@ -164,6 +176,8 @@ class GlobalExceptionHandlerTest {
     @DisplayName("필수 파라미터 누락 예외 처리")
     void handleMissingParameterException_Success() {
         // Given
+        when(messageService.getMessage("MISSING_PARAMETER")).thenReturn("필수 파라미터가 누락되었습니다.");
+        
         MissingServletRequestParameterException exception = 
                 new MissingServletRequestParameterException("phoneNumber", "String");
         
@@ -173,13 +187,16 @@ class GlobalExceptionHandlerTest {
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().getCode()).isEqualTo("MISSING_PARAMETER");
-        assertThat(response.getBody().getMessage()).isEqualTo("필수 파라미터가 누락되었습니다: phoneNumber");
+        assertThat(response.getBody().getMessage()).contains("필수 파라미터가 누락되었습니다");
+        assertThat(response.getBody().getMessage()).contains("phoneNumber");
     }
 
     @Test
     @DisplayName("메서드 인자 타입 불일치 예외 처리")
     void handleTypeMismatchException_Success() {
         // Given
+        when(messageService.getMessage("TYPE_MISMATCH")).thenReturn("잘못된 파라미터 타입입니다.");
+        
         MethodArgumentTypeMismatchException exception = mock(MethodArgumentTypeMismatchException.class);
         when(exception.getName()).thenReturn("coinCount");
         
@@ -189,13 +206,16 @@ class GlobalExceptionHandlerTest {
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().getCode()).isEqualTo("TYPE_MISMATCH");
-        assertThat(response.getBody().getMessage()).isEqualTo("잘못된 파라미터 타입입니다: coinCount");
+        assertThat(response.getBody().getMessage()).contains("잘못된 파라미터 타입입니다");
+        assertThat(response.getBody().getMessage()).contains("coinCount");
     }
 
     @Test
     @DisplayName("HTTP 메서드 지원하지 않음 예외 처리")
     void handleMethodNotSupportedException_Success() {
         // Given
+        when(messageService.getMessage("METHOD_NOT_ALLOWED")).thenReturn("지원하지 않는 HTTP 메서드입니다.");
+        
         HttpRequestMethodNotSupportedException exception = 
                 new HttpRequestMethodNotSupportedException("DELETE");
         
@@ -205,13 +225,16 @@ class GlobalExceptionHandlerTest {
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
         assertThat(response.getBody().getCode()).isEqualTo("METHOD_NOT_ALLOWED");
-        assertThat(response.getBody().getMessage()).isEqualTo("지원하지 않는 HTTP 메서드입니다: DELETE");
+        assertThat(response.getBody().getMessage()).contains("지원하지 않는 HTTP 메서드입니다");
+        assertThat(response.getBody().getMessage()).contains("DELETE");
     }
 
     @Test
     @DisplayName("핸들러를 찾을 수 없음 예외 처리")
     void handleNoHandlerFoundException_Success() {
         // Given
+        when(messageService.getMessage("NOT_FOUND")).thenReturn("요청한 리소스를 찾을 수 없습니다.");
+        
         NoHandlerFoundException exception = 
                 new NoHandlerFoundException("GET", "/api/nonexistent", null);
         
@@ -230,6 +253,8 @@ class GlobalExceptionHandlerTest {
     @DisplayName("HTTP 메시지 읽기 불가 예외 처리")
     void handleHttpMessageNotReadableException_Success() {
         // Given
+        when(messageService.getMessage("MESSAGE_NOT_READABLE")).thenReturn("요청 본문을 읽을 수 없습니다. JSON 형식을 확인해주세요.");
+        
         HttpMessageNotReadableException exception = mock(HttpMessageNotReadableException.class);
         
         // When
@@ -245,6 +270,8 @@ class GlobalExceptionHandlerTest {
     @DisplayName("데이터베이스 접근 예외 처리")
     void handleDataAccessException_Success() {
         // Given
+        when(messageService.getMessage("DATABASE_ERROR")).thenReturn("데이터베이스 오류가 발생했습니다.");
+        
         DataAccessException exception = mock(DataAccessException.class);
         when(exception.getMessage()).thenReturn("Database connection failed");
         
@@ -254,13 +281,15 @@ class GlobalExceptionHandlerTest {
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody().getCode()).isEqualTo("DATABASE_ERROR");
-        assertThat(response.getBody().getMessage()).isEqualTo("데이터베이스 처리 중 오류가 발생했습니다.");
+        assertThat(response.getBody().getMessage()).isEqualTo("데이터베이스 오류가 발생했습니다.");
     }
 
     @Test
     @DisplayName("일반적인 예외 처리")
     void handleGeneralException_Success() {
         // Given
+        when(messageService.getMessage("INTERNAL_SERVER_ERROR")).thenReturn("서버 내부 오류가 발생했습니다.");
+        
         RuntimeException exception = new RuntimeException("Unexpected error");
         
         // When
