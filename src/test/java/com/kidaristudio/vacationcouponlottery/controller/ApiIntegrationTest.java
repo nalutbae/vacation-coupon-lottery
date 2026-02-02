@@ -1,6 +1,10 @@
 package com.kidaristudio.vacationcouponlottery.controller;
 
 import com.kidaristudio.vacationcouponlottery.domain.CouponType;
+import com.kidaristudio.vacationcouponlottery.repository.SystemConfigRepository;
+import com.kidaristudio.vacationcouponlottery.repository.UserRepository;
+import com.kidaristudio.vacationcouponlottery.repository.VacationCouponEntryRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +23,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * API 통합 테스트
  * 전체 API 엔드포인트의 실제 동작을 검증합니다.
  * 실제 서비스 계층과 데이터베이스를 사용하여 엔드투엔드 테스트를 수행합니다.
+ * 
+ * 각 테스트 실행 전에 Liquibase 마이그레이션을 통해 데이터베이스를 초기화하고
+ * 시스템 설정을 올바른 상태로 복원하여 테스트 격리를 보장합니다.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebMvc
@@ -29,11 +36,27 @@ class ApiIntegrationTest {
     @Autowired
     private WebApplicationContext webApplicationContext;
 
+    @Autowired
+    private SystemConfigRepository systemConfigRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private VacationCouponEntryRepository entryRepository;
+
     private MockMvc mockMvc;
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        
+        // 테스트 데이터 초기화 - 외래 키 제약 조건 고려하여 순서대로 삭제
+        entryRepository.deleteAll();  // 응모 데이터 먼저 삭제
+        userRepository.deleteAll();   // 사용자 데이터 삭제
+        
+        // 시스템 설정 초기화 - Liquibase 마이그레이션 후 올바른 상태로 복원
+        resetSystemState();
     }
 
     @Test
@@ -274,5 +297,50 @@ class ApiIntegrationTest {
                         .param("coinCount", "1"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MISSING_PARAMETER"));
+    }
+
+    // ========================================
+    // 시스템 설정 초기화 메서드들
+    // ========================================
+    // Liquibase 마이그레이션 후 시스템 설정을 올바른 상태로 복원합니다.
+
+    /**
+     * 각 테스트 전에 시스템 상태를 초기화합니다.
+     * 전체 코인 수량을 900개로, 남은 코인 수량을 900개로 재설정합니다.
+     * 
+     * 이는 test profile에서 Liquibase 마이그레이션이 제대로 실행되지 않거나
+     * 이전 테스트의 영향을 받지 않도록 보장합니다.
+     */
+    private void resetSystemState() {
+        // 시스템 설정 초기화
+        resetSystemConfig("TOTAL_COINS", "900", "전체 응모 코인 수량");
+        resetSystemConfig("REMAINING_COINS", "900", "남은 응모 코인 수량");
+        resetSystemConfig("MAX_COINS_PER_USER", "3", "사용자당 최대 응모 코인 수");
+        resetSystemConfig("WINNERS_PER_COUPON", "3", "쿠폰당 당첨자 수");
+    }
+    
+    /**
+     * 개별 시스템 설정값을 초기화합니다.
+     * 
+     * @param configKey 설정 키
+     * @param configValue 설정 값
+     * @param description 설정 설명
+     */
+    private void resetSystemConfig(String configKey, String configValue, String description) {
+        systemConfigRepository.findByConfigKey(configKey)
+                .ifPresentOrElse(
+                    config -> {
+                        config.updateValue(configValue);
+                        systemConfigRepository.save(config);
+                    },
+                    () -> {
+                        var newConfig = com.kidaristudio.vacationcouponlottery.domain.SystemConfig.builder()
+                                .configKey(configKey)
+                                .configValue(configValue)
+                                .description(description)
+                                .build();
+                        systemConfigRepository.save(newConfig);
+                    }
+                );
     }
 }
