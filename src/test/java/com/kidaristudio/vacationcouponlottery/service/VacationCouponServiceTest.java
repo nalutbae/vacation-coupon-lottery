@@ -214,7 +214,7 @@ class VacationCouponServiceTest {
         // When & Then: 두 번째 사용자가 첫 번째 사용자의 응모 취소 시도
         assertThatThrownBy(() -> vacationCouponService.cancelEntry(otherPhoneNumber, entryId))
                 .isInstanceOf(EntryException.UnauthorizedAccessException.class)
-                .hasMessageContaining("본인");
+                .hasMessageContaining("권한이 없습니다.");
     }
 
     @Test

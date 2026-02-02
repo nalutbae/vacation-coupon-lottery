@@ -100,7 +100,7 @@ class LotteryServiceTest {
         // When & Then: 두 번째 추첨 시도 시 예외 발생
         assertThatThrownBy(() -> lotteryService.conductLottery(CouponType.ONE_DAY))
                 .isInstanceOf(LotteryException.LotteryAlreadyCompletedException.class)
-                .hasMessageContaining("이미 완료");
+                .hasMessageContaining("이미 추첨이 완료되었습니다.");
     }
 
     @Test
@@ -324,7 +324,7 @@ class LotteryServiceTest {
         // When & Then: 추첨 실행 시 예외 발생
         assertThatThrownBy(() -> lotteryService.conductLottery(null))
                 .isInstanceOf(LotteryException.InvalidLotteryRequestException.class)
-                .hasMessageContaining("쿠폰 타입은 필수");
+                .hasMessageContaining("잘못된 추첨 요청입니다.");
     }
 
     @Test

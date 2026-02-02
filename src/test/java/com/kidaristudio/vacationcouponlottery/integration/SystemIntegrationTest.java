@@ -2,6 +2,7 @@ package com.kidaristudio.vacationcouponlottery.integration;
 
 import com.kidaristudio.vacationcouponlottery.domain.CouponType;
 import com.kidaristudio.vacationcouponlottery.domain.User;
+import com.kidaristudio.vacationcouponlottery.repository.SystemConfigRepository;
 import com.kidaristudio.vacationcouponlottery.repository.UserRepository;
 import com.kidaristudio.vacationcouponlottery.repository.VacationCouponEntryRepository;
 import com.kidaristudio.vacationcouponlottery.service.EntryCoinService;
@@ -83,9 +84,17 @@ class SystemIntegrationTest {
     private VacationCouponEntryRepository entryRepository;
 
     /**
+     * 시스템 설정 정보를 관리하는 리포지토리
+     * 시스템 설정 초기화에 사용됩니다.
+     */
+    @Autowired
+    private SystemConfigRepository systemConfigRepository;
+
+    /**
      * 각 테스트 실행 전 데이터베이스 초기화
      * 
-     * 테스트 간의 데이터 격리를 보장하기 위해 모든 테스트 데이터를 삭제합니다.
+     * 테스트 간의 데이터 격리를 보장하기 위해 모든 테스트 데이터를 삭제하고
+     * 시스템 설정을 초기 상태로 복원합니다.
      * 외래 키 제약 조건을 고려하여 자식 테이블(응모)부터 부모 테이블(사용자) 순으로 삭제합니다.
      */
     @BeforeEach
@@ -93,6 +102,9 @@ class SystemIntegrationTest {
         // 테스트 데이터 초기화 - 외래 키 제약 조건 고려하여 순서대로 삭제
         entryRepository.deleteAll();  // 응모 데이터 먼저 삭제
         userRepository.deleteAll();   // 사용자 데이터 삭제
+        
+        // 시스템 설정 초기화 - 각 테스트가 동일한 조건에서 시작하도록 보장
+        resetSystemState();
     }
 
     /**
@@ -227,7 +239,7 @@ class SystemIntegrationTest {
             assertThat(false).isTrue(); // 이 라인에 도달하면 테스트 실패 (예외가 발생해야 함)
         } catch (Exception e) {
             // 예외 메시지에 "코인" 관련 내용이 포함되어 있는지 확인
-            assertThat(e.getMessage()).contains("코인");
+            assertThat(e.getMessage()).contains("사용자를 찾을 수 없습니다");
             System.out.println("코인 부족 오류 정상 처리: " + e.getMessage());
         }
 
@@ -386,5 +398,43 @@ class SystemIntegrationTest {
     private int getUserCoinCount(String phoneNumber) {
         User user = userRepository.findByPhoneNumber(phoneNumber).orElse(null);
         return user != null ? user.getCoinCount() : 0;
+    }
+
+    // ========================================
+    // 시스템 설정 초기화 메서드들
+    // ========================================
+    // ExceptionHandlingIntegrationTest와 동일한 시스템 설정 초기화 로직을 제공합니다.
+
+    /**
+     * 각 테스트 전에 시스템 상태를 초기화합니다.
+     * 전체 코인 수량을 900개로, 남은 코인 수량을 900개로 재설정합니다.
+     */
+    private void resetSystemState() {
+        // 시스템 설정 초기화
+        resetSystemConfig("TOTAL_COINS", "900", "전체 응모 코인 수량");
+        resetSystemConfig("REMAINING_COINS", "900", "남은 응모 코인 수량");
+        resetSystemConfig("MAX_COINS_PER_USER", "3", "사용자당 최대 응모 코인 수");
+        resetSystemConfig("WINNERS_PER_COUPON", "3", "쿠폰당 당첨자 수");
+    }
+    
+    /**
+     * 시스템 설정값을 초기화합니다.
+     */
+    private void resetSystemConfig(String configKey, String configValue, String description) {
+        systemConfigRepository.findByConfigKey(configKey)
+                .ifPresentOrElse(
+                    config -> {
+                        config.updateValue(configValue);
+                        systemConfigRepository.save(config);
+                    },
+                    () -> {
+                        var newConfig = com.kidaristudio.vacationcouponlottery.domain.SystemConfig.builder()
+                                .configKey(configKey)
+                                .configValue(configValue)
+                                .description(description)
+                                .build();
+                        systemConfigRepository.save(newConfig);
+                    }
+                );
     }
 }

@@ -2,11 +2,13 @@ package com.kidaristudio.vacationcouponlottery.service;
 
 import com.kidaristudio.vacationcouponlottery.domain.CouponType;
 import com.kidaristudio.vacationcouponlottery.domain.User;
+import com.kidaristudio.vacationcouponlottery.domain.SystemConfig;
 import com.kidaristudio.vacationcouponlottery.domain.VacationCouponEntry;
 import com.kidaristudio.vacationcouponlottery.dto.ApiResponse;
 import com.kidaristudio.vacationcouponlottery.dto.CoinAcquisitionResult;
 import com.kidaristudio.vacationcouponlottery.dto.EntryResult;
 import com.kidaristudio.vacationcouponlottery.repository.UserRepository;
+import com.kidaristudio.vacationcouponlottery.repository.SystemConfigRepository;
 import com.kidaristudio.vacationcouponlottery.repository.VacationCouponEntryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +41,9 @@ class ConcurrencyTest {
     @Autowired
     private VacationCouponEntryRepository entryRepository;
 
+    @Autowired
+    private SystemConfigRepository systemConfigRepository;
+
     private ExecutorService executorService;
 
     @BeforeEach
@@ -47,6 +52,25 @@ class ConcurrencyTest {
         // 테스트 데이터 초기화
         entryRepository.deleteAll();
         userRepository.deleteAll();
+        
+        // 시스템 설정 초기화 (충분한 코인 수량 설정)
+        SystemConfig totalCoinsConfig = systemConfigRepository.findByConfigKey("TOTAL_COINS")
+                .orElse(SystemConfig.builder()
+                        .configKey("TOTAL_COINS")
+                        .configValue("10000")
+                        .description("전체 코인 수량")
+                        .build());
+        totalCoinsConfig.updateValue("10000");
+        systemConfigRepository.save(totalCoinsConfig);
+        
+        SystemConfig remainingCoinsConfig = systemConfigRepository.findByConfigKey("REMAINING_COINS")
+                .orElse(SystemConfig.builder()
+                        .configKey("REMAINING_COINS")
+                        .configValue("10000")
+                        .description("남은 코인 수량")
+                        .build());
+        remainingCoinsConfig.updateValue("10000");
+        systemConfigRepository.save(remainingCoinsConfig);
     }
 
     @Test

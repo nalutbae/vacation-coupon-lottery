@@ -109,7 +109,7 @@ class EntryCoinServiceTest {
         // When & Then: 추가 획득 시도 시 예외 발생
         assertThatThrownBy(() -> entryCoinService.acquireCoin(phoneNumber))
             .isInstanceOf(CoinException.CoinLimitExceededException.class)
-            .hasMessageContaining("누적 응모 코인 획득 한도");
+            .hasMessageContaining("응모 코인 한도를 초과했습니다. (최대 3개)");
 
         // 사용자의 코인 수는 변경되지 않아야 함
         User user = userRepository.findByPhoneNumber(phoneNumber).orElse(null);

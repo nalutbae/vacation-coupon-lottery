@@ -57,11 +57,20 @@ class PerformanceTest {
         SystemConfig totalCoinsConfig = systemConfigRepository.findByConfigKey("TOTAL_COINS")
                 .orElse(SystemConfig.builder()
                         .configKey("TOTAL_COINS")
-                        .configValue("10000")
+                        .configValue("100000")
                         .description("전체 코인 수량")
                         .build());
-        totalCoinsConfig.updateValue("10000");
+        totalCoinsConfig.updateValue("100000"); // 충분한 코인 수량으로 설정
         systemConfigRepository.save(totalCoinsConfig);
+        
+        SystemConfig remainingCoinsConfig = systemConfigRepository.findByConfigKey("REMAINING_COINS")
+                .orElse(SystemConfig.builder()
+                        .configKey("REMAINING_COINS")
+                        .configValue("100000")
+                        .description("남은 코인 수량")
+                        .build());
+        remainingCoinsConfig.updateValue("100000"); // 충분한 코인 수량으로 설정
+        systemConfigRepository.save(remainingCoinsConfig);
     }
 
     @Test
@@ -90,7 +99,7 @@ class PerformanceTest {
         stopWatch.stop();
 
         // Then: 성능 검증
-        long totalTimeMs = stopWatch.getLastTaskTimeMillis();
+        long totalTimeMs = stopWatch.getTaskInfo()[0].getTimeMillis();
         double avgTimePerUser = (double) totalTimeMs / numberOfUsers;
         
         System.out.println("=== 대량 코인 획득 성능 결과 ===");
@@ -135,7 +144,7 @@ class PerformanceTest {
         stopWatch.stop();
 
         // Then: 성능 검증
-        long totalTimeMs = stopWatch.getLastTaskTimeMillis();
+        long totalTimeMs = stopWatch.getTaskInfo()[0].getTimeMillis();
         double avgTimePerEntry = (double) totalTimeMs / numberOfUsers;
         
         System.out.println("=== 대량 응모 성능 결과 ===");
@@ -180,7 +189,7 @@ class PerformanceTest {
         stopWatch.stop();
 
         // Then: 성능 검증
-        long totalTimeMs = stopWatch.getLastTaskTimeMillis();
+        long totalTimeMs = stopWatch.getTaskInfo()[0].getTimeMillis();
         int totalEntries = numberOfUsers * entriesPerUser;
         double timePerEntry = (double) totalTimeMs / totalEntries;
         
